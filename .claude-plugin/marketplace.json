@@ -1,0 +1,18 @@
+{
+  "name": "tech-doc-harness",
+  "description": "코드베이스 기반 기술문서 작성 하네스 - 분석/설계/작성/검증/배포 5단계 워크플로우, Mermaid/draw.io, Confluence 연동",
+  "owner": {
+    "name": "atototo"
+  },
+  "plugins": [
+    {
+      "name": "tech-doc",
+      "description": "코드베이스 기반 기술문서 작성 하네스 - 분석/설계/작성/검증/배포 5단계, Mermaid/draw.io 다이어그램",
+      "version": "1.0.0",
+      "author": {
+        "name": "atototo"
+      },
+      "source": "."
+    }
+  ]
+}
