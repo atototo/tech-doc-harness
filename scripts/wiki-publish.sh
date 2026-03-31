@@ -12,7 +12,7 @@ PARENT_ID="$1"
 TITLE="$2"
 BODY_FILE="$3"
 PAGE_ID="${4:-}"
-SPACE_KEY="${WIKI_SPACE_KEY:-yomojomo}"
+SPACE_KEY="${WIKI_SPACE_KEY:?WIKI_SPACE_KEY not set}"
 
 if [ -z "$CONFLUENCE_TOKEN" ]; then
   echo "ERROR: CONFLUENCE_TOKEN not set" >&2
@@ -24,7 +24,7 @@ BODY_HTML=$(cat "$BODY_FILE")
 if [ -n "$PAGE_ID" ]; then
   # 수정 모드: 현재 버전 조회
   CUR_VER=$(curl -s -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
-    "https://${WIKI_HOST:-wiki.daumkakao.com}/rest/api/content/$PAGE_ID?expand=version" | \
+    "https://${WIKI_HOST:?WIKI_HOST not set}/rest/api/content/$PAGE_ID?expand=version" | \
     python3 -c "import sys,json; print(json.load(sys.stdin)['version']['number'])")
   NEW_VER=$((CUR_VER + 1))
 
@@ -43,7 +43,7 @@ json.dump(payload, open('/tmp/_wiki_payload.json','w'), ensure_ascii=False)
 
   RESULT=$(curl -s -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
     -H "Content-Type: application/json" \
-    -X PUT "https://${WIKI_HOST:-wiki.daumkakao.com}/rest/api/content/$PAGE_ID" \
+    -X PUT "https://${WIKI_HOST:?WIKI_HOST not set}/rest/api/content/$PAGE_ID" \
     -d @/tmp/_wiki_payload.json)
 else
   # 생성 모드
@@ -61,7 +61,7 @@ json.dump(payload, open('/tmp/_wiki_payload.json','w'), ensure_ascii=False)
 
   RESULT=$(curl -s -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
     -H "Content-Type: application/json" \
-    -X POST "https://${WIKI_HOST:-wiki.daumkakao.com}/rest/api/content" \
+    -X POST "https://${WIKI_HOST:?WIKI_HOST not set}/rest/api/content" \
     -d @/tmp/_wiki_payload.json)
 fi
 

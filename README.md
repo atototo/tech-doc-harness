@@ -59,13 +59,16 @@ claude plugin add github.com/atototo/tech-doc-harness
 | 상태 전이 | Mermaid | stateDiagram-v2 |
 | 플로우차트 | Mermaid | classDef 색상 분류 |
 
-## 환경변수
+## 설정
 
-| 변수 | 설명 | 기본값 |
-|------|------|--------|
-| `CONFLUENCE_TOKEN` | Confluence API 토큰 | (필수) |
-| `WIKI_HOST` | Confluence 호스트 | wiki.daumkakao.com |
-| `WIKI_SPACE_KEY` | Space Key | yomojomo |
+플러그인 설치 후 환경변수를 로컬에 설정합니다:
+
+```bash
+# ~/.zshrc 또는 ~/.bashrc에 추가
+export CONFLUENCE_TOKEN="your-confluence-api-token"
+export WIKI_HOST="your-confluence-host.com"
+export WIKI_SPACE_KEY="your-space-key"
+```
 
 ## License
 

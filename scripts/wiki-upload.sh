@@ -19,7 +19,7 @@ for FILE_PATH in "$@"; do
   FILENAME=$(basename "$FILE_PATH")
   RESULT=$(curl -s -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
     -H "X-Atlassian-Token: nocheck" \
-    -X POST "https://${WIKI_HOST:-wiki.daumkakao.com}/rest/api/content/$PAGE_ID/child/attachment" \
+    -X POST "https://${WIKI_HOST:?WIKI_HOST not set}/rest/api/content/$PAGE_ID/child/attachment" \
     -F "file=@$FILE_PATH")
 
   echo "$RESULT" | python3 -c "
