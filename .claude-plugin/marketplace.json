@@ -12,7 +12,7 @@
       "author": {
         "name": "atototo"
       },
-      "source": "."
+      "source": "./plugins/tech-doc"
     }
   ]
 }
