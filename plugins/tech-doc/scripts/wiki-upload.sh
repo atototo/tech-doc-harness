@@ -4,8 +4,8 @@
 #
 # 예시: wiki-upload.sh 2081219725 /tmp/diagram.drawio /tmp/screenshot.png
 
-set -euo pipefail
-source ~/.zshrc 2>/dev/null || true
+set -uo pipefail
+# 호출자가 CONFLUENCE_TOKEN / WIKI_HOST 를 export 상태로 호출해야 함.
 
 PAGE_ID="$1"
 shift

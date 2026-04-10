@@ -19,6 +19,30 @@ description: "코드베이스 기반 기술문서 작성 하네스. 분석→설
 | `${CLAUDE_PLUGIN_ROOT}/skills/tech-doc/references/quality-checklist.md` | Phase 4 (검증 시) |
 | `${CLAUDE_PLUGIN_ROOT}/skills/tech-doc/references/agent-guide.md` | 병렬 처리 시 |
 
+## 설치 후 권장 설정
+
+승인 프롬프트를 줄이려면 `~/.claude/settings.json` 의 `permissions.allow` 에 다음을 추가한다. `/permissions` 명령으로도 동일하게 추가 가능.
+
+```
+Bash(~/.claude/plugins/cache/tech-doc-harness/**)
+Bash(bash ~/.claude/plugins/cache/tech-doc-harness/**)
+Task(subagent_type:tech-doc:*)
+Skill(tech-doc:*)
+```
+
+스킬 내부에서는 서브에이전트 호출에 `mode="bypassPermissions"` 를 명시해 이중 안전장치를 건다.
+
+## 사전 분류 — 팩트 출처
+
+Phase 1 진입 전에 분류한다. 기준은 "팩트가 이미 내 컨텍스트에 있는가". 애매하면 B로 간주.
+
+| 케이스 | Phase 1 | Phase 4 |
+|---|---|---|
+| **A. 본인이 방금 작성/수정한 코드 문서화** (컨텍스트에 팩트 있음) | skip — 컨텍스트 팩트 사용 | self-review 1회 (reviewer 에이전트 생략) |
+| **B. 타인 작성 / 오래된 코드 문서화** | analyzer 서브에이전트 병렬 실행 | reviewer + verify-doc.sh |
+
+케이스 A는 analyzer/reviewer 재분석이 중복이라 토큰 낭비. 케이스 B는 팩트 신뢰도 확보가 목적이므로 생략하지 않는다.
+
 ## 실행 모드
 
 **서브 에이전트 모드** (기본). 통신 불필요한 독립 작업이므로 Agent 도구로 직접 호출.
@@ -32,17 +56,20 @@ description: "코드베이스 기반 기술문서 작성 하네스. 분석→설
 
 코드에서 팩트를 추출한다.
 
+**케이스 A (본인 작성)면 이 Phase 전체를 skip하고 컨텍스트의 팩트를 그대로 Phase 2로 전달한다.**
+
 ### 실행
 `analyzer` 에이전트로 분석한다. FE/BE 병렬 분석 가능.
 
 ```
 # 단일 분석
-Agent(subagent_type="tech-doc:analyzer", prompt="... {type} 분석 ...")
+Agent(subagent_type="tech-doc:analyzer", mode="bypassPermissions",
+      prompt="... {type} 분석 ...")
 
 # FE/BE 병렬 분석 (단일 메시지에서 동시 호출)
-Agent(subagent_type="tech-doc:analyzer", name="fe-analysis", run_in_background=true,
+Agent(subagent_type="tech-doc:analyzer", name="fe-analysis", run_in_background=true, mode="bypassPermissions",
       prompt="FE({fe_path})에서 {type} 분석")
-Agent(subagent_type="tech-doc:analyzer", name="be-analysis", run_in_background=true,
+Agent(subagent_type="tech-doc:analyzer", name="be-analysis", run_in_background=true, mode="bypassPermissions",
       prompt="BE({be_path})에서 {type} 분석")
 ```
 
@@ -97,6 +124,15 @@ Agent(subagent_type="tech-doc:writer", name="kink-doc", run_in_background=true, 
 3. **표 활용** — 나열형 정보는 표로
 4. **이모지 금지** — 색상과 shape으로 구분. 문서가 가벼워 보임
 
+### Confluence 배포 전제조건
+
+스크립트 호출 전 아래 env가 export 상태여야 한다 (미설정 시 스크립트가 즉시 명확한 에러 반환):
+- `CONFLUENCE_TOKEN`
+- `WIKI_HOST`
+- `WIKI_SPACE_KEY`
+
+미설정이면 사용자에게 shell(`~/.zshrc` 등)에서 export 후 재실행 요청.
+
 ### Confluence 배포 (번들 스크립트 사용)
 
 스크립트를 사용하여 토큰을 절약한다. 경로: `${CLAUDE_PLUGIN_ROOT}/scripts/`
@@ -120,7 +156,7 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/verify-doc.sh /tmp/checks.txt /path/to/fe /path/to
 
 ## Phase 4: 검증 (Verify)
 
-**건너뛰지 않는다.**
+**케이스 B는 건너뛰지 않는다.** 케이스 A(본인 작성)는 `reviewer` 에이전트 호출 대신 self-review 1회로 대체 가능 — 내가 방금 짠 코드라 팩트 재확인의 가치가 낮다.
 
 `reviewer` 에이전트 + `verify-doc.sh` 스크립트 조합으로 검증.
 
@@ -128,8 +164,8 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/verify-doc.sh /tmp/checks.txt /path/to/fe /path/to
 # 자동 검증 (스크립트) — API 경로 존재 확인
 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-doc.sh /tmp/checks.txt <fe_path> <be_path>
 
-# 심층 검증 (에이전트) — 호출 관계, 프로세스 정확성
-Agent(subagent_type="tech-doc:reviewer",
+# 심층 검증 (에이전트, 케이스 B) — 호출 관계, 프로세스 정확성
+Agent(subagent_type="tech-doc:reviewer", mode="bypassPermissions",
       prompt="다음 문서를 검증: {문서 내용 요약}. FE: {fe_path}, BE: {be_path}")
 ```
 
@@ -169,16 +205,16 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/wiki-upload.sh <page_id> /tmp/diagram.drawio
 독립 문서 여러 개 동시 작성 시:
 
 ```
-# Phase 1: analyzer 병렬 (FE/BE)
-Agent(subagent_type="tech-doc:analyzer", name="fe", run_in_background=true, prompt="FE 분석")
-Agent(subagent_type="tech-doc:analyzer", name="be", run_in_background=true, prompt="BE 분석")
+# Phase 1: analyzer 병렬 (FE/BE)  — 케이스 B만 해당
+Agent(subagent_type="tech-doc:analyzer", name="fe", run_in_background=true, mode="bypassPermissions", prompt="FE 분석")
+Agent(subagent_type="tech-doc:analyzer", name="be", run_in_background=true, mode="bypassPermissions", prompt="BE 분석")
 
 # Phase 3: writer 병렬 (문서별)
 Agent(subagent_type="tech-doc:writer", name="doc-1", run_in_background=true, mode="bypassPermissions", ...)
 Agent(subagent_type="tech-doc:writer", name="doc-2", run_in_background=true, mode="bypassPermissions", ...)
 
-# Phase 4: reviewer (작성 완료 후)
-Agent(subagent_type="tech-doc:reviewer", prompt="문서 1,2 검증")
+# Phase 4: reviewer (작성 완료 후, 케이스 B만)
+Agent(subagent_type="tech-doc:reviewer", mode="bypassPermissions", prompt="문서 1,2 검증")
 ```
 
 ## 비용 최적화

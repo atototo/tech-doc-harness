@@ -5,8 +5,9 @@
 # 생성: wiki-publish.sh 2081209993 "페이지 제목" /tmp/body.html
 # 수정: wiki-publish.sh 2081209993 "페이지 제목" /tmp/body.html 2081219725
 
-set -euo pipefail
-source ~/.zshrc 2>/dev/null || true
+set -uo pipefail
+# 호출자가 CONFLUENCE_TOKEN / WIKI_HOST / WIKI_SPACE_KEY 를 export 상태로 호출해야 함.
+# 아래 ${VAR:?} 검증이 누락 시 즉시 명확한 에러를 낸다.
 
 PARENT_ID="$1"
 TITLE="$2"

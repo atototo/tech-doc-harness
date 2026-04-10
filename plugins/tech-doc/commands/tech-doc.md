@@ -32,4 +32,14 @@ description: "기술문서 작성. /tech-doc <type> <target> 형태로 호출. t
 
 ## 실행
 
-`tech-doc` 스킬을 로드하고 Phase 1부터 순서대로 진행합니다.
+이 파일은 명령 메타데이터다. 호출되면 **즉시** 아래 절차를 수행한다 — 이 도움말을 출력하고 멈추는 것은 실패다.
+
+1. ARGUMENTS 파싱
+   - 첫 토큰 = `type` (architecture | process-flow | integration | domain-spec 중 하나)
+   - 나머지 따옴표 문자열 = `target`
+   - `--parent <id>`, `--space <key>` 옵션 추출
+2. `type` 누락 시 한 번만 사용자에게 질문 후 진행
+3. `Skill` 도구로 `tech-doc:tech-doc` 스킬을 invoke — SKILL.md 본문이 컨텍스트에 로드됨
+4. 로드된 SKILL.md의 "사전 분류" → Phase 1 → ... → Phase 5 순서로 진행
+
+**중요**: `/tech-doc` 호출 목적은 SKILL.md의 전체 워크플로우 실행이다. 명령 도움말만 표시하고 종료하는 동작은 명시적 실패로 간주한다.
